@@ -135,6 +135,8 @@ class BindingMixin:
         scalar=True,
         ydata_init=None,
         fit_coeffs=None,
+        ridge=False,
+        lam=3e-5,
         *args,
         **kwargs,
     ):
@@ -160,9 +162,24 @@ class BindingMixin:
             # This is equivalent to
             # << coeffs = molefrac\ydata (EA = HG\DA) >>
             # in Matlab
-            coeffs_raw, _, _, _ = np.linalg.lstsq(
-                molefrac_raw.T, ydata.T, rcond=-1
-            )
+            A = molefrac_raw.T
+            B = ydata.T
+
+            #Ridge regression
+            if ridge:
+                ATA = A.T @ A
+                scale = np.mean(np.diag(ATA))
+                alpha = lam * scale
+
+                ATA_reg = ATA + alpha * np.eye(A.shape[1])
+                ATB = A.T @ B
+
+                coeffs_raw = np.linalg.solve(ATA_reg, ATB)
+            else:
+                coeffs_raw, _, _, _ = np.linalg.lstsq(
+                    molefrac_raw.T, ydata.T, rcond=-1
+                )
+
 
         # Restrict UV coefficients to positive values when normalised
         if not self.normalise and "uv" in self.fitter:
