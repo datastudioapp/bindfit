@@ -3,7 +3,7 @@ import numpy as np
 import bindfit
 import pprint
 
-def run_bindfit(input_file: str, hostname: str, guestname: str, fitter_name: str, method: str, normalise: bool, flavour: str, params: dict) -> dict:
+def run_bindfit(input_file: str, hostname: str, guestname: str, fitter_name: str, method: str, normalise: bool, flavour: str, dilute: bool, params: dict) -> dict:
     """Run bindfit on a given input file.
 
     Parameters
@@ -46,7 +46,7 @@ def run_bindfit(input_file: str, hostname: str, guestname: str, fitter_name: str
     )
 
     fitter = bindfit.fitter.Fitter(
-        data, function, normalise=normalise, params=params
+        data, function, normalise=normalise, params=params, dilution_correction=dilute
     )
 
     fitter.run_scipy(params, method=method)
@@ -82,10 +82,7 @@ def run_bindfit(input_file: str, hostname: str, guestname: str, fitter_name: str
         },
     }
 
-    pprint.pprint(summary)
-
-
-    return fitter.params
+    return summary
 
 def assertValueInRange(self, value, target, error):
     """Check that a value is within target +/- error.
@@ -146,5 +143,5 @@ if __name__ == "__main__":
     },
     }
     #Expected values are 968,68204,1024
-    summary = run_bindfit(input_file, hostname, guestname, fitter_name, method, normalise, flavour, params)
+    summary = run_bindfit(input_file, hostname, guestname, fitter_name, method, normalise, flavour, dilute, params)
     pprint.pprint(summary)
