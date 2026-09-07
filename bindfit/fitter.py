@@ -1,5 +1,6 @@
 import time
 from itertools import product
+from functools import partial
 
 import pandas as pd
 import numpy as np
@@ -130,6 +131,10 @@ class Fitter:
         self.residuals = None
         self.coeffs = None
         self.molefrac = None
+        
+        #Used for ridge regression
+        self.ridge = False
+        self.lam = 3e-4
 
     def _preprocess(self, ydata):
         # Preprocess data based on Fitter options
@@ -157,6 +162,8 @@ class Fitter:
         xdata=None,
         ydata=None,
         method="Nelder-Mead",
+        ridge=False,
+        lam=3e-5
     ):
         """Fit data given initial parameter guesses.
 
@@ -175,11 +182,18 @@ class Fitter:
             (used with save=False for Monte Carlo error calculation)
         method : `string`, optional
             The fitting method to use.
+        ridge: `bool`, optional
+            Whether we use ridge regression
+        lam: `float`, optional
+            Lambda parameter for ridge
         """
         # Set input data
         x = self.xdata if xdata is None else xdata
         y = self._preprocess(self.ydata if ydata is None else ydata)
 
+        #Update ridge regression parameters
+        self.ridge = ridge
+        self.lam = lam
         # Sort parameter dict into ordered array of parameters and bounds
         p = []
         b = []
@@ -187,13 +201,21 @@ class Fitter:
             p.append(value["init"])
             b.append([value["bounds"]["min"], value["bounds"]["max"]])
 
+        #Set up objective to allow TODO
+        obj = partial(
+            self.function.objective,
+            xdata=x,
+            ydata=y,
+            scalar=True,
+            ridge=ridge,
+            lam=lam,
+        )
         # Run optimizer
         tic = time.perf_counter()
         result = scipy.optimize.minimize(
-            self.function.objective,
+            obj,
             p,
             bounds=b,
-            args=(x, y, True),
             method=method if method else "Nelder-Mead",
             tol=1e-18,
         )
@@ -211,7 +233,7 @@ class Fitter:
             coeffs,
             molefrac,
         ) = self.function.objective(
-            result.x, x, y, scalar=False, ydata_init=ydata_init
+            result.x, x, y, scalar=False, ydata_init=ydata_init, ridge=ridge, lam=lam
         )
 
         # Postprocessing
@@ -246,6 +268,8 @@ class Fitter:
         results["params"] = self.function.format_params(
             params_init, result.x, err
         )
+
+        results["ridge"] = {"ridge_bool": ridge, "lambda": lam if ridge else None}
 
         if save:
             # Save fit results dict to object instance
@@ -290,11 +314,14 @@ class Fitter:
                 scalar=False,
                 ydata_init=ydata_init,
                 fit_coeffs=coeffs,
+                ridge=self.ridge,
+                lam=self.lam
             )
             fit_shift = self._postprocess(self.ydata, fit_shift_norm)
 
             # Calculate partial differential
             # Flatten numerator into 1D array (TODO: is this correct?)
+            # Add some small error to prevent div by 0
             num = (fit_shift - fit).flatten()
             denom = pi_shift - pi
             diffs.append(np.divide(num, denom))
@@ -307,7 +334,14 @@ class Fitter:
         for i, j in product(range(P), range(P)):
             M[i, j] = np.sum(diffs[i] * diffs[j])
 
-        M_inv = np.linalg.inv(M)
+        #TODO: Should we regularise to prevent crash?
+        # ex e = 1e-8; M_inv = np.linalg.inv(M + e*np.eye(P))
+        try:
+            M_inv = np.linalg.inv(M)
+        except np.linalg.LinAlgError:
+            scale = np.trace(M) / M.shape[0]
+            eps = 1e-10 * max(scale, 1.0)
+            M_inv = np.linalg.inv(M + eps * np.eye(M.shape[0]))
         m_diag = np.diagonal(M_inv)
 
         # 2. Calculate standard deviations sigma of P parameters pi
