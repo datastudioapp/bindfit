@@ -128,7 +128,6 @@ class TestBindfit(unittest.TestCase):
             assert np.allclose(fit.sum(axis=0), 1, rtol=1e-9)
             assert np.all(fit >= 0)
             assert np.all(disp >= 0)
-            break
 
 if __name__ == '__main__':
     unittest.main()
