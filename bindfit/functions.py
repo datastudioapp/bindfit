@@ -634,7 +634,7 @@ def nmr_1to3(params, xdata, flavour="none", *args, **kwargs):
     a = np.ones(h0.shape[0]) * k11 * k12 * k13
     b = (k11 * k12) - (g0 * k11 * k12 * k13) + (3 * h0 * k11 * k12 * k13)
     c = k11 - (g0 * k11 * k12) + (2 * h0 * k11 * k12)
-    d = 1 - (g0 * k11) + (h0 * k11) 
+    d = 1 - (g0 * k11) + (h0 * k11)
     e = -1.0 * g0
 
     poly = np.column_stack((a, b, c, d, e))
