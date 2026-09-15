@@ -82,7 +82,7 @@ def run_bindfit(input_file: str, hostname: str, guestname: str, fitter_name: str
         },
     }
 
-    return summary
+    return summary, fitter
 
 def assertValueInRange(self, value, target, error):
     """Check that a value is within target +/- error.

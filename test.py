@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 class TestBindfit(unittest.TestCase):
     # Test nmr1to1 fitter with Nelder-Mead method
     def test_nmr_1to1(self):
-        input_file = "NMR1to1.csv"
+        input_file = r"tests/nmr1to1/NMR1to1.csv"
         hostname = "Host"
         guestname = "Guest"
         fitter_name = "nmr1to1"
@@ -31,7 +31,7 @@ class TestBindfit(unittest.TestCase):
         test_helpers.assertValueInRange(self, summary["fit"]["params"]["k"]["value"], 334, 2.5)
 
     def test_nmr_1to2(self):
-        input_file = "NMR1to2.csv"
+        input_file = "tests/nmr1to2/NMR1to2.csv"
         hostname = "Host"
         guestname = "Guest"
         fitter_name = "nmr1to2"
