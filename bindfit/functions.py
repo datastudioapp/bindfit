@@ -718,7 +718,6 @@ def nmr_2to1(params, xdata, flavour="none", *args, **kwargs):
     hg_mat = np.vstack((h, hg, h2g))
     return hg_mat_fit, hg_mat
 
-
 def nmr_3to1(params, xdata, flavour="none", *args, **kwargs):
     """Calculates predicted [HG], [H2G], and [H3G] given data object and
     binding constants as input.
@@ -760,10 +759,10 @@ def nmr_3to1(params, xdata, flavour="none", *args, **kwargs):
 
         h[i] = soln
 
-    denom = (1 + (h * k11) + (h * h * k11 * k12) + (h * h * h * k11 * k12 * k13))
-    hg = ((1 / h0) * (g0 * h * k11) / denom)
-    h2g = ((1 / h0) * (g0 * 2 * h * h * k11 * k12) / denom)
-    h3g = ((1 / h0) * (g0 * 3 * h * h * h * k11 * k12 * k13) / denom)
+    denom = 1 + (h * k11) + (h * h * k11 * k12) + (h * h * h * k11 * k12 * k13)
+    hg = (1 / h0) * (g0 * h * k11) / denom
+    h2g = (1 / h0) * (g0 * 2 * h * h * k11 * k12) / denom
+    h3g = (1 / h0) * (g0 * 3 * h * h * h * k11 * k12 * k13) / denom
 
     h = 1 - hg - h2g - h3g
 
