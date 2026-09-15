@@ -637,12 +637,6 @@ def nmr_1to3(params, xdata, flavour="none", *args, **kwargs):
     d = 1 - (g0 * k11) + (h0 * k11) 
     e = -1.0 * g0
 
-    #a1 = (uu.*(K11.*K12.*K13));
-    #a2 = (uu.*((K11.*K12)-(Ltot.*K11.*K12.*K13)+(3.*htot.*K11.*K12.*K13)));
-    #a3 = (uu.*(K11-(Ltot.*K11.*K12)+(2.*htot.*K11.*K12)));
-    #a4 = (uu.*(1-(Ltot.*K11)+(htot.*K11)));
-    #a5 = (uu.*(-1.*Ltot));
-
     poly = np.column_stack((a, b, c, d, e))
 
     g = np.zeros(h0.shape[0])
@@ -669,10 +663,6 @@ def nmr_1to3(params, xdata, flavour="none", *args, **kwargs):
     hg3 = (g * g * g * k11 * k12 * k13) / (
         1 + (g * k11) + (g * g * k11 * k12) + (g * g * g * k11 * k12 * k13)
     )
-
-    #HG = ((b.*K11)./(1+(b.*K11)+(b.*b.*K11.*K12)+(b.*b.*b.*K11.*K12.*K13)));   
-    #HG2 = (((b.*b.*K11.*K12))./(1+(b.*K11)+(b.*b.*K11.*K12)+(b.*b.*b.*K11.*K12.*K13)));
-    #HG3 = (((b.*b.*b.*K11.*K12.*K13))./(1+(b.*K11)+(b.*b.*K11.*K12)+(b.*b.*b.*K11.*K12.*K13)));
 
     # h0 in UV
     h = 1 - hg - hg2 - hg3
