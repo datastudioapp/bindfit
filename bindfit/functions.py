@@ -216,13 +216,13 @@ class BindingMixin:
             if rows == 1:
                 # 1:1 system
                 hg = h + coeffs[0]
-                print("3:1 system")
+
                 return np.vstack((h, hg))
             elif rows == 2:
                 # 1:2 or 2:1 system
                 hg = h + coeffs[0]
                 hg2 = h + coeffs[1]
-                print("2:1 system")
+
                 return np.vstack((h, hg, hg2))
                 
             elif rows == 3:
@@ -230,7 +230,7 @@ class BindingMixin:
                 hg = h + coeffs[0]
                 hg2 = h + coeffs[1]
                 hg3 = h + coeffs[2]
-                print("3:1 system")
+
                 return np.vstack((h, hg, hg2, hg3))
                 
             else:
