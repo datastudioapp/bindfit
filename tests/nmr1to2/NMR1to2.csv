@@ -1,4 +1,4 @@
-Host concentration / M,Guest concentration / M,Proton 1,Proton 2,Proton 3,Proton 4
+Host,Guest,Proton 1,Proton 2,Proton 3,Proton 4
 0.0024518,0.00E+00,8.275,7.497,4.234,3.606
 0.0024518,5.05E-04,8.339,7.612,4.239,3.6025
 0.0024518,1.00E-03,8.406,7.702,4.242,3.599
