@@ -216,12 +216,23 @@ class BindingMixin:
             if rows == 1:
                 # 1:1 system
                 hg = h + coeffs[0]
+
                 return np.vstack((h, hg))
             elif rows == 2:
                 # 1:2 or 2:1 system
                 hg = h + coeffs[0]
                 hg2 = h + coeffs[1]
+
                 return np.vstack((h, hg, hg2))
+
+            elif rows == 3:
+                # 1:3 system
+                hg = h + coeffs[0]
+                hg2 = h + coeffs[1]
+                hg3 = h + coeffs[2]
+
+                return np.vstack((h, hg, hg2, hg3))
+
             else:
                 pass  # Throw error here
         else:
@@ -594,7 +605,62 @@ def uv_1to3(params, xdata, flavour="none", *args, **kwargs):
     h = h0 - hg - hg2 - hg3
 
     hg_mat_fit = np.vstack((h, hg, hg2, hg3))
-    hg_mat = np.vstack((h/h0, hg/h0, hg2/h0, hg3/h0))
+    hg_mat = np.vstack((h / h0, hg / h0, hg2 / h0, hg3 / h0))
+
+    return hg_mat_fit, hg_mat
+
+
+def nmr_1to3(params, xdata, flavour="none", *args, **kwargs):
+    """Calculates predicted [HG], [HG2], and [HG3] given data object and
+    binding constants as input.
+    """
+
+    # Intialise Data
+    k11 = params[0]
+    if flavour == "noncoop":
+        k12 = k11 / 3
+        k13 = k11 / 9
+    else:
+        k12 = params[1]
+        k13 = params[2]
+
+    h0 = xdata[0]  # Host # htot in matlab code
+    g0 = xdata[1]  # Guest # ltot in matlab code
+
+    # Calculation of guest: Solve quartic
+    a = np.ones(h0.shape[0]) * k11 * k12 * k13
+    b = (k11 * k12) - (g0 * k11 * k12 * k13) + (3 * h0 * k11 * k12 * k13)
+    c = k11 - (g0 * k11 * k12) + (2 * h0 * k11 * k12)
+    d = 1 - (g0 * k11) + (h0 * k11)
+    e = -1.0 * g0
+
+    poly = np.column_stack((a, b, c, d, e))
+
+    g = np.zeros(h0.shape[0])
+    for i, p in enumerate(poly):
+        roots = np.roots(p)
+
+        # Smallest real +ve root is [G]
+        select = np.all([np.imag(roots) == 0, np.real(roots) >= 0], axis=0)
+        if select.any():
+            soln = roots[select].min()
+            soln = float(np.real(soln))
+        else:
+            # No positive real roots, set solution to 0
+            soln = 0.0
+
+        g[i] = soln
+
+    denom = 1 + (g * k11) + (g * g * k11 * k12) + (g * g * g * k11 * k12 * k13)
+    hg = (g * k11) / (denom)
+    hg2 = (g * g * k11 * k12) / (denom)
+    hg3 = (g * g * g * k11 * k12 * k13) / (denom)
+
+    # h0 in UV
+    h = 1 - hg - hg2 - hg3
+
+    hg_mat_fit = np.vstack((h, hg, hg2, hg3))
+    hg_mat = np.vstack((h, hg, hg2, hg3))
 
     return hg_mat_fit, hg_mat
 
@@ -626,6 +692,7 @@ def nmr_2to1(params, xdata, flavour="none", *args, **kwargs):
 
     for i, p in enumerate(poly):
         roots = np.roots(p)
+
         # Smallest real +ve root is [H]
         select = np.all([np.imag(roots) == 0, np.real(roots) >= 0], axis=0)
         if select.any():
@@ -651,6 +718,60 @@ def nmr_2to1(params, xdata, flavour="none", *args, **kwargs):
         hg_mat_fit = np.vstack((h, hg, h2g))
 
     hg_mat = np.vstack((h, hg, h2g))
+    return hg_mat_fit, hg_mat
+
+
+def nmr_3to1(params, xdata, flavour="none", *args, **kwargs):
+    """Calculates predicted [HG], [H2G], and [H3G] given data object and
+    binding constants as input.
+    """
+
+    # Intialise Data
+    k11 = params[0]
+    if flavour == "noncoop":
+        k12 = k11 / 3
+        k13 = k11 / 9
+    else:
+        k12 = params[1]
+        k13 = params[2]
+
+    h0 = xdata[0]  # h0 in matlab code
+    g0 = xdata[1]  # g0 in matlab code
+
+    # Calculation of host: Solve quartic
+    a = np.ones(h0.shape[0]) * k11 * k12 * k13
+    b = (k11 * k12) + (3 * g0 * k11 * k12 * k13) - (h0 * k11 * k12 * k13)
+    c = k11 + (2 * g0 * k11 * k12) - (h0 * k11 * k12)
+    d = 1 + (g0 * k11) - (h0 * k11)
+    e = -1.0 * h0
+
+    poly = np.column_stack((a, b, c, d, e))
+
+    h = np.zeros(h0.shape[0])
+    for i, p in enumerate(poly):
+        roots = np.roots(p)
+
+        # Smallest real +ve root is [G]
+        select = np.all([np.imag(roots) == 0, np.real(roots) >= 0], axis=0)
+        if select.any():
+            soln = roots[select].min()
+            soln = float(np.real(soln))
+        else:
+            # No positive real roots, set solution to 0
+            soln = 0.0
+
+        h[i] = soln
+
+    denom = 1 + (h * k11) + (h * h * k11 * k12) + (h * h * h * k11 * k12 * k13)
+    hg = (1 / h0) * (g0 * h * k11) / denom
+    h2g = (1 / h0) * (g0 * 2 * h * h * k11 * k12) / denom
+    h3g = (1 / h0) * (g0 * 3 * h * h * h * k11 * k12 * k13) / denom
+
+    h = 1 - hg - h2g - h3g
+
+    hg_mat_fit = np.vstack((h, hg, h2g, h3g))
+    hg_mat = np.vstack((h, hg, h2g, h3g))
+
     return hg_mat_fit, hg_mat
 
 
@@ -713,7 +834,7 @@ def uv_2to1(params, xdata, flavour="none"):
 
 def uv_3to1(params, xdata, flavour="none", *args, **kwargs):
     """Calculates predicted [HG], [H2G], and [H3G] given data object and
-    binding constants as input.
+    binding constants as input for UV data.
     """
 
     # Intialise Data
@@ -730,7 +851,7 @@ def uv_3to1(params, xdata, flavour="none", *args, **kwargs):
 
     # Calculation of host: Solve quartic
     a = np.ones(h0.shape[0]) * k11 * k12 * k13
-    b = (k11 * k12) + (3 * g0 * k11 * k12 * k13) - (h0 * k11 * k12 * k13) 
+    b = (k11 * k12) + (3 * g0 * k11 * k12 * k13) - (h0 * k11 * k12 * k13)
     c = k11 + (2 * g0 * k11 * k12) - (h0 * k11 * k12)
     d = 1 + (g0 * k11) - (h0 * k11)
     e = -1.0 * h0
@@ -752,15 +873,15 @@ def uv_3to1(params, xdata, flavour="none", *args, **kwargs):
 
         h[i] = soln
 
-    denom = (1 + (h * k11) + (h * h * k11 * k12) + (h * h * h * k11 * k12 * k13))
-    hg = ((g0 * h * k11) / denom)
-    h2g = ((g0 * 2 * h * h * k11 * k12) / denom)
-    h3g = ((g0 * 3 * h * h * h * k11 * k12 * k13) / denom)
+    denom = 1 + (h * k11) + (h * h * k11 * k12) + (h * h * h * k11 * k12 * k13)
+    hg = (g0 * h * k11) / denom
+    h2g = (g0 * 2 * h * h * k11 * k12) / denom
+    h3g = (g0 * 3 * h * h * h * k11 * k12 * k13) / denom
 
     h = h0 - hg - h2g - h3g
 
     hg_mat_fit = np.vstack((h, hg, h2g, h3g))
-    hg_mat = np.vstack((h/h0, hg/h0, h2g/h0, h3g/h0))
+    hg_mat = np.vstack((h / h0, hg / h0, h2g / h0, h3g / h0))
 
     return hg_mat_fit, hg_mat
 
@@ -954,7 +1075,9 @@ def construct(key, normalise=True, flavour="none"):
         "nmrdata": ["FunctionBinding", (key)],
         "nmr1to1": ["FunctionBinding", (key, nmr_1to1, normalise, flavour)],
         "nmr1to2": ["FunctionBinding", (key, nmr_1to2, normalise, flavour)],
+        "nmr1to3": ["FunctionBinding", (key, nmr_1to3, normalise, flavour)],
         "nmr2to1": ["FunctionBinding", (key, nmr_2to1, normalise, flavour)],
+        "nmr3to1": ["FunctionBinding", (key, nmr_3to1, normalise, flavour)],
         "uvdata": ["FunctionBinding", (key)],
         "uv1to1": ["FunctionBinding", (key, uv_1to1, normalise, flavour)],
         "uv1to2": ["FunctionBinding", (key, uv_1to2, normalise, flavour)],
